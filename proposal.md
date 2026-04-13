@@ -4,11 +4,11 @@
 https://github.com/TheFinaIFighter/falling-sky-project
 
 ## Description
-Falling Sky will be a simple survival game built using Python and Pygame where the player must avoid falling hazards for as long as possible. The project is relevant to digital arts and media because it combines interactive design, visual feedback, and gameplay mechanics into an engaging experience.
+Falling Sky will be a simple survival game built using Python and Pygame where the player must avoid falling hazards for as long as possible. The project is relevant to digital arts and media because it will combine interactive design, visual feedback, and gameplay mechanics into an engaging experience.
 
 ## Features
 - Player Movement
-	- The player can move left and right using keyboard input, implemented through Pygame’s event and key handling system.
+	- The player will be able to move left and right using keyboard input, implemented through Pygame’s event and key handling system.
 - Falling Hazards
 	- Objects will spawn at random positions at the top of the screen and fall downward, using basic object classes and random generation.
 - Collision Detection
@@ -18,14 +18,14 @@ Falling Sky will be a simple survival game built using Python and Pygame where t
 - Increasing Difficulty
 	- Hazard spawn rate and speed will gradually increase over time to make the game more challenging.
 - Slow Motion Ability
-	- The player can activate a temporary slow-motion effect with a cooldown.
-- Game States (Start & Game Over Screens)
+	- The player will be able to activate a temporary slow-motion effect with a cooldown.
+- Game States
 	- The game will include a start screen and game over screen with options to restart or quit.
 
 ## Challenges
 - Implementing smooth difficulty scaling without making the game too easy or too hard.
 - Managing multiple game states (menu, gameplay, game over) cleanly.
-- Balancing the slow-motion ability so it feels useful but not overpowered.
+- Implementing and Balancing the slow-motion ability so it feels useful but not overpowered.
 
 ## Outcomes
 Ideal Outcome:
@@ -46,4 +46,4 @@ Minimal Viable Outcome:
 
 - Week 3 (Final)
   1. Add start screen and game over screen
-  2. Polish visuals, fix bugs, and prepare final submission
+  2. Polish visuals and fix bugs
