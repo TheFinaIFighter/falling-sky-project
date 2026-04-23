@@ -12,9 +12,13 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Falling Sky")
 clock = pygame.time.Clock()
 
+font_large = pygame.font.SysFont(None, 64)
+font_medium = pygame.font.SysFont(None, 36)
+
 BLACK = (15, 15, 20)
 BLUE = (70, 130, 220)
 RED = (220, 70, 70)
+WHITE = (255, 255, 255)
 DARK_GRAY = (40, 40, 50)
 
 PLAYER_WIDTH = 60
@@ -75,12 +79,24 @@ def draw_background(surface):
         pygame.draw.line(surface, DARK_GRAY, (0, y), (WIDTH, y), 1)
 
 
+def draw_text(surface, text, font, color, x, y):
+    image = font.render(text, True, color)
+    rect = image.get_rect(center=(x, y))
+    surface.blit(image, rect)
+
+
+def draw_game_over(surface):
+    draw_text(surface, "Game Over", font_large, WHITE, WIDTH // 2, HEIGHT // 2 - 20)
+    draw_text(surface, "Close the window to quit", font_medium, WHITE, WIDTH // 2, HEIGHT // 2 + 35)
+
+
 def main():
     player = Player()
     hazards = []
 
     last_spawn_time = pygame.time.get_ticks()
     running = True
+    game_over = False
 
     while running:
         clock.tick(FPS)
@@ -89,24 +105,33 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-        keys = pygame.key.get_pressed()
-        player.update(keys)
+        if not game_over:
+            keys = pygame.key.get_pressed()
+            player.update(keys)
 
-        current_time = pygame.time.get_ticks()
-        if current_time - last_spawn_time >= HAZARD_SPAWN_DELAY:
-            hazards.append(Hazard())
-            last_spawn_time = current_time
+            current_time = pygame.time.get_ticks()
+            if current_time - last_spawn_time >= HAZARD_SPAWN_DELAY:
+                hazards.append(Hazard())
+                last_spawn_time = current_time
 
-        for hazard in hazards:
-            hazard.update()
+            for hazard in hazards:
+                hazard.update()
 
-        hazards = [hazard for hazard in hazards if hazard.rect.top <= HEIGHT]
+            hazards = [hazard for hazard in hazards if hazard.rect.top <= HEIGHT]
+
+            for hazard in hazards:
+                if player.rect.colliderect(hazard.rect):
+                    game_over = True
+                    break
 
         draw_background(screen)
-        player.draw(screen)
 
-        for hazard in hazards:
-            hazard.draw(screen)
+        if not game_over:
+            player.draw(screen)
+            for hazard in hazards:
+                hazard.draw(screen)
+        else:
+            draw_game_over(screen)
 
         pygame.display.flip()
 
