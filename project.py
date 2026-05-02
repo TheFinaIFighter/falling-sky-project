@@ -20,6 +20,9 @@ BLACK = (15, 15, 20)
 BLUE = (70, 130, 220)
 RED = (220, 70, 70)
 WHITE = (255, 255, 255)
+GRAY = (150, 150, 150)
+YELLOW = (240, 220, 90)
+GREEN = (80, 200, 120)
 DARK_GRAY = (40, 40, 50)
 
 PLAYER_WIDTH = 60
@@ -30,6 +33,9 @@ HAZARD_WIDTH = 35
 HAZARD_HEIGHT = 35
 HAZARD_BASE_SPEED = 4
 HAZARD_SPAWN_DELAY = 700
+
+SLOWMO_DURATION = 2000
+SLOWMO_COOLDOWN = 5000
 
 
 class Player:
@@ -67,8 +73,8 @@ class Hazard:
         )
         self.speed = HAZARD_BASE_SPEED + random.uniform(0, 2) + speed_bonus
 
-    def update(self):
-        self.rect.y += self.speed
+    def update(self, time_scale):
+        self.rect.y += self.speed * time_scale
 
     def draw(self, surface):
         pygame.draw.rect(surface, RED, self.rect, border_radius=4)
@@ -86,9 +92,22 @@ def draw_text(surface, text, font, color, x, y):
     surface.blit(image, rect)
 
 
-def draw_ui(surface, score):
+def draw_ui(surface, score, slowmo_active, slowmo_ready, cooldown_left):
     score_text = font_medium.render(f"Score: {score}", True, WHITE)
     surface.blit(score_text, (20, 20))
+
+    if slowmo_active:
+        status_text = "Slow Motion: ACTIVE"
+        status_color = YELLOW
+    elif slowmo_ready:
+        status_text = "Slow Motion: READY (SPACE)"
+        status_color = GREEN
+    else:
+        status_text = f"Slow Motion Cooldown: {cooldown_left:.1f}s"
+        status_color = GRAY
+
+    slowmo_text = font_small.render(status_text, True, status_color)
+    surface.blit(slowmo_text, (20, 60))
 
 
 def draw_game_over(surface, score):
@@ -108,6 +127,10 @@ def main():
     game_over = False
     final_score = 0
 
+    slowmo_active = False
+    slowmo_start_time = 0
+    last_slowmo_used = -SLOWMO_COOLDOWN
+
     while running:
         clock.tick(FPS)
 
@@ -115,10 +138,23 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
+            if not game_over and event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    current_time = pygame.time.get_ticks()
+                    if current_time - last_slowmo_used >= SLOWMO_COOLDOWN:
+                        slowmo_active = True
+                        slowmo_start_time = current_time
+                        last_slowmo_used = current_time
+
         current_time = pygame.time.get_ticks()
         elapsed_seconds = (current_time - start_time) // 1000
         speed_bonus = elapsed_seconds * 0.15
         current_spawn_delay = max(250, HAZARD_SPAWN_DELAY - elapsed_seconds * 15)
+
+        if slowmo_active and current_time - slowmo_start_time >= SLOWMO_DURATION:
+            slowmo_active = False
+
+        time_scale = 0.45 if slowmo_active else 1.0
 
         if not game_over:
             keys = pygame.key.get_pressed()
@@ -129,7 +165,7 @@ def main():
                 last_spawn_time = current_time
 
             for hazard in hazards:
-                hazard.update()
+                hazard.update(time_scale)
 
             hazards = [hazard for hazard in hazards if hazard.rect.top <= HEIGHT]
 
@@ -147,7 +183,10 @@ def main():
             for hazard in hazards:
                 hazard.draw(screen)
 
-            draw_ui(screen, elapsed_seconds)
+            slowmo_ready = current_time - last_slowmo_used >= SLOWMO_COOLDOWN
+            cooldown_left = max(0, (SLOWMO_COOLDOWN - (current_time - last_slowmo_used)) / 1000)
+
+            draw_ui(screen, elapsed_seconds, slowmo_active, slowmo_ready, cooldown_left)
         else:
             draw_game_over(screen, final_score)
 
