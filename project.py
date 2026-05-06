@@ -110,90 +110,131 @@ def draw_ui(surface, score, slowmo_active, slowmo_ready, cooldown_left):
     surface.blit(slowmo_text, (20, 60))
 
 
-def draw_game_over(surface, score):
-    draw_text(surface, "Game Over", font_large, WHITE, WIDTH // 2, HEIGHT // 2 - 40)
-    draw_text(surface, f"Final Score: {score}", font_medium, WHITE, WIDTH // 2, HEIGHT // 2 + 10)
-    draw_text(surface, "Close the window to quit", font_small, WHITE, WIDTH // 2, HEIGHT // 2 + 50)
+def start_screen():
+    while True:
+        clock.tick(FPS)
+        draw_background(screen)
+
+        draw_text(screen, "Falling Sky", font_large, WHITE, WIDTH // 2, HEIGHT // 2 - 90)
+        draw_text(screen, "Avoid the falling hazards for as long as possible.", font_small, WHITE, WIDTH // 2, HEIGHT // 2 - 25)
+        draw_text(screen, "Move with A/D or Left/Right", font_small, WHITE, WIDTH // 2, HEIGHT // 2 + 10)
+        draw_text(screen, "Press SPACE to slow time", font_small, WHITE, WIDTH // 2, HEIGHT // 2 + 45)
+        draw_text(screen, "Press ENTER to Start", font_medium, YELLOW, WIDTH // 2, HEIGHT // 2 + 110)
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    return
 
 
-def main():
+def game_over_screen(score):
+    while True:
+        clock.tick(FPS)
+        draw_background(screen)
+
+        draw_text(screen, "Game Over", font_large, RED, WIDTH // 2, HEIGHT // 2 - 70)
+        draw_text(screen, f"Final Score: {score}", font_medium, WHITE, WIDTH // 2, HEIGHT // 2)
+        draw_text(screen, "Press R to Restart", font_medium, YELLOW, WIDTH // 2, HEIGHT // 2 + 65)
+        draw_text(screen, "Press ESC to Quit", font_small, GRAY, WIDTH // 2, HEIGHT // 2 + 110)
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    return
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+
+
+def run_game():
     player = Player()
     hazards = []
 
     last_spawn_time = pygame.time.get_ticks()
     start_time = pygame.time.get_ticks()
 
-    running = True
-    game_over = False
     final_score = 0
 
     slowmo_active = False
     slowmo_start_time = 0
     last_slowmo_used = -SLOWMO_COOLDOWN
 
+    running = True
+
     while running:
         clock.tick(FPS)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-            if not game_over and event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    current_time = pygame.time.get_ticks()
-                    if current_time - last_slowmo_used >= SLOWMO_COOLDOWN:
-                        slowmo_active = True
-                        slowmo_start_time = current_time
-                        last_slowmo_used = current_time
 
         current_time = pygame.time.get_ticks()
         elapsed_seconds = (current_time - start_time) // 1000
         speed_bonus = elapsed_seconds * 0.15
         current_spawn_delay = max(250, HAZARD_SPAWN_DELAY - elapsed_seconds * 15)
 
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    if current_time - last_slowmo_used >= SLOWMO_COOLDOWN:
+                        slowmo_active = True
+                        slowmo_start_time = current_time
+                        last_slowmo_used = current_time
+
         if slowmo_active and current_time - slowmo_start_time >= SLOWMO_DURATION:
             slowmo_active = False
 
         time_scale = 0.45 if slowmo_active else 1.0
 
-        if not game_over:
-            keys = pygame.key.get_pressed()
-            player.update(keys)
+        keys = pygame.key.get_pressed()
+        player.update(keys)
 
-            if current_time - last_spawn_time >= current_spawn_delay:
-                hazards.append(Hazard(speed_bonus))
-                last_spawn_time = current_time
+        if current_time - last_spawn_time >= current_spawn_delay:
+            hazards.append(Hazard(speed_bonus))
+            last_spawn_time = current_time
 
-            for hazard in hazards:
-                hazard.update(time_scale)
+        for hazard in hazards:
+            hazard.update(time_scale)
 
-            hazards = [hazard for hazard in hazards if hazard.rect.top <= HEIGHT]
+        hazards = [hazard for hazard in hazards if hazard.rect.top <= HEIGHT]
 
-            for hazard in hazards:
-                if player.rect.colliderect(hazard.rect):
-                    game_over = True
-                    final_score = elapsed_seconds
-                    break
+        for hazard in hazards:
+            if player.rect.colliderect(hazard.rect):
+                final_score = elapsed_seconds
+                return final_score
 
         draw_background(screen)
+        player.draw(screen)
 
-        if not game_over:
-            player.draw(screen)
+        for hazard in hazards:
+            hazard.draw(screen)
 
-            for hazard in hazards:
-                hazard.draw(screen)
+        slowmo_ready = current_time - last_slowmo_used >= SLOWMO_COOLDOWN
+        cooldown_left = max(0, (SLOWMO_COOLDOWN - (current_time - last_slowmo_used)) / 1000)
 
-            slowmo_ready = current_time - last_slowmo_used >= SLOWMO_COOLDOWN
-            cooldown_left = max(0, (SLOWMO_COOLDOWN - (current_time - last_slowmo_used)) / 1000)
-
-            draw_ui(screen, elapsed_seconds, slowmo_active, slowmo_ready, cooldown_left)
-        else:
-            draw_game_over(screen, final_score)
+        draw_ui(screen, elapsed_seconds, slowmo_active, slowmo_ready, cooldown_left)
 
         pygame.display.flip()
 
-    pygame.quit()
-    sys.exit()
+
+def main():
+    start_screen()
+
+    while True:
+        score = run_game()
+        game_over_screen(score)
 
 
 if __name__ == "__main__":
